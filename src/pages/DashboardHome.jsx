@@ -4,6 +4,8 @@ import { Database, BarChart3, Sparkles, Clock, ArrowUpRight, Plus, FileText, Che
 import { supabase } from '../services/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
+import DashboardGrid, { DashboardWidget } from '../components/dashboard/DashboardGrid'
+import { Settings2, Save, X } from 'lucide-react'
 
 const MetricCard = ({ title, value, icon: Icon, trend, color }) => (
     <motion.div
@@ -30,7 +32,16 @@ const MetricCard = ({ title, value, icon: Icon, trend, color }) => (
 )
 
 const DashboardHome = () => {
-    const { user } = useAuth()
+    const { user, updateProfile } = useAuth()
+    const [isEditing, setIsEditing] = useState(false)
+    const [layout, setLayout] = useState([
+        { i: 'stats1', x: 0, y: 0, w: 3, h: 2 },
+        { i: 'stats2', x: 3, y: 0, w: 3, h: 2 },
+        { i: 'stats3', x: 6, y: 0, w: 3, h: 2 },
+        { i: 'stats4', x: 9, y: 0, w: 3, h: 2 },
+        { i: 'recent', x: 0, y: 2, w: 8, h: 5 },
+        { i: 'summary', x: 8, y: 2, w: 4, h: 5 },
+    ])
     const [stats, setStats] = useState({
         datasets: 0,
         charts: 0,
@@ -39,6 +50,13 @@ const DashboardHome = () => {
     })
     const [recentDatasets, setRecentDatasets] = useState([])
     const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    useEffect(() => {
+        if (user?.user_metadata?.dashboard_layout) {
+            setLayout(user.user_metadata.dashboard_layout)
+        }
+    }, [user])
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -80,127 +98,151 @@ const DashboardHome = () => {
         fetchStats()
     }, [user])
 
+    const handleLayoutChange = (newLayout) => {
+        setLayout(newLayout)
+    }
+
+    const saveLayout = async () => {
+        try {
+            setSaving(true)
+            await updateProfile({ dashboard_layout: layout })
+            setIsEditing(false)
+        } catch (err) {
+            console.error('Error saving layout:', err)
+            alert('Failed to save layout')
+        } finally {
+            setSaving(false)
+        }
+    }
+
     return (
-        <div className="space-y-10 animate-in fade-in duration-700">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-3xl font-black tracking-tight text-foreground">
-                        Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                        Welcome, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
                     </h2>
-                    <p className="text-zinc-500 mt-1 font-medium">Here's what's happening with your data today.</p>
+                    <p className="text-zinc-500 mt-1 font-medium">Customize your data workspace.</p>
                 </div>
-                <Link
-                    to="/dashboard/upload"
-                    className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
-                >
-                    <Plus className="h-5 w-5" />
-                    Upload New Data
-                </Link>
+                <div className="flex items-center gap-3">
+                    {!isEditing ? (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="inline-flex items-center gap-2 bg-muted text-foreground px-6 py-3 rounded-2xl font-bold hover:bg-emphasis transition-all"
+                        >
+                            <Settings2 className="h-5 w-5" />
+                            Edit Layout
+                        </button>
+                    ) : (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="inline-flex items-center gap-2 bg-muted text-foreground px-4 py-3 rounded-2xl font-bold hover:bg-zinc-200 transition-all"
+                            >
+                                <X className="h-5 w-5" />
+                                Cancel
+                            </button>
+                            <button
+                                onClick={saveLayout}
+                                disabled={saving}
+                                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all disabled:opacity-50"
+                            >
+                                <Save className="h-5 w-5" />
+                                {saving ? "Saving..." : "Save Layout"}
+                            </button>
+                        </div>
+                    )}
+                    <Link
+                        to="/dashboard/upload"
+                        className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus className="h-5 w-5" />
+                        Upload
+                    </Link>
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <MetricCard
-                    title="Total Datasets"
-                    value={loading ? "..." : stats.datasets}
-                    icon={Database}
-                    trend={stats.datasets > 0 ? "+1" : null}
-                    color="from-primary to-blue-600"
-                />
-                <MetricCard
-                    title="Intelligence Score"
-                    value={loading ? "..." : stats.insights}
-                    icon={Sparkles}
-                    trend={stats.insights > 0 ? "Live" : null}
-                    color="from-purple-500 to-pink-600"
-                />
-                <MetricCard
-                    title="Active Insights"
-                    value={loading ? "..." : stats.insights}
-                    icon={Sparkles}
-                    color="from-yellow-500 to-orange-600"
-                />
-                <MetricCard
-                    title="Hours Saved"
-                    value={loading ? "..." : (stats.datasets * 0.5 + stats.insights * 0.2).toFixed(1)}
-                    icon={Clock}
-                    color="from-green-500 to-emerald-600"
-                />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Recent Activity */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-primary" />
-                            Recent Datasets
-                        </h3>
-                        <Link to="/dashboard/history" className="text-sm font-bold text-primary hover:underline flex items-center gap-1">
-                            View All <ChevronRight className="h-4 w-4" />
-                        </Link>
-                    </div>
-
-                    <div className="bg-card border border-border rounded-[2rem] overflow-hidden">
-                        {recentDatasets.length > 0 ? (
-                            <div className="divide-y divide-border">
-                                {recentDatasets.map((ds) => (
-                                    <div key={ds.id} className="p-6 hover:bg-muted/30 transition-colors flex items-center justify-between group">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                                <Database className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-foreground">{ds.file_name}</p>
-                                                <p className="text-xs text-zinc-500">
-                                                    Uploaded {new Date(ds.upload_date).toLocaleDateString()} • {ds.row_count} rows
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Link
-                                            to={`/dashboard/insights?id=${ds.id}`}
-                                            className="p-2 rounded-xl bg-muted hover:bg-primary hover:text-white transition-all"
-                                        >
-                                            <ArrowUpRight className="h-5 w-5" />
-                                        </Link>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="p-12 text-center">
-                                <p className="text-muted-foreground italic">No datasets uploaded yet.</p>
-                                <Link to="/dashboard/upload" className="text-primary font-bold mt-2 inline-block">
-                                    Upload your first file
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Quick Insight */}
-                <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-yellow-500" />
-                        Quick Summary
-                    </h3>
-
-                    <div className="bg-gradient-to-br from-primary to-blue-600 rounded-[2rem] p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Sparkles className="h-24 w-24" />
+            <DashboardGrid
+                layout={layout}
+                isDraggable={isEditing}
+                onLayoutChange={handleLayoutChange}
+            >
+                <div key="stats1">
+                    <DashboardWidget id="stats1" title="Datasets" isDraggable={isEditing}>
+                        <div className="flex flex-col">
+                            <Database className="h-8 w-8 text-blue-500 mb-2" />
+                            <p className="text-3xl font-black">{loading ? "..." : stats.datasets}</p>
+                            <p className="text-xs text-zinc-500">Connected sources</p>
                         </div>
-                        <h4 className="text-lg font-bold mb-4">AI Assistant Tip</h4>
-                        <p className="text-sm text-white/80 leading-relaxed mb-6">
-                            Based on your recent uploads, you tend to see the highest growth in the "Enterprise" sector. We've updated your suggested charts.
-                        </p>
-                        <Link
-                            to="/dashboard/insights"
-                            className="w-full bg-white text-primary font-bold py-3 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all"
-                        >
-                            Explore Insights
-                        </Link>
-                    </div>
+                    </DashboardWidget>
                 </div>
-            </div>
-        </div>
+
+                <div key="stats2">
+                    <DashboardWidget id="stats2" title="Intelligence" isDraggable={isEditing}>
+                        <div className="flex flex-col">
+                            <Sparkles className="h-8 w-8 text-purple-500 mb-2" />
+                            <p className="text-3xl font-black">{loading ? "..." : stats.insights}</p>
+                            <p className="text-xs text-zinc-500">AI generated patterns</p>
+                        </div>
+                    </DashboardWidget>
+                </div>
+
+                <div key="stats3">
+                    <DashboardWidget id="stats3" title="Insights" isDraggable={isEditing}>
+                        <div className="flex flex-col">
+                            <BarChart3 className="h-8 w-8 text-yellow-500 mb-2" />
+                            <p className="text-3xl font-black">{loading ? "..." : stats.insights}</p>
+                            <p className="text-xs text-zinc-500">Active reports</p>
+                        </div>
+                    </DashboardWidget>
+                </div>
+
+                <div key="stats4">
+                    <DashboardWidget id="stats4" title="Time Saved" isDraggable={isEditing}>
+                        <div className="flex flex-col">
+                            <Clock className="h-8 w-8 text-green-500 mb-2" />
+                            <p className="text-3xl font-black">{loading ? "..." : (stats.datasets * 0.5 + stats.insights * 0.2).toFixed(1)}h</p>
+                            <p className="text-xs text-zinc-500">Manual effort reduced</p>
+                        </div>
+                    </DashboardWidget>
+                </div>
+
+                <div key="recent">
+                    <DashboardWidget id="recent" title="Recent Datasets" isDraggable={isEditing}>
+                        <div className="space-y-4">
+                            {recentDatasets.map((ds) => (
+                                <div key={ds.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <Database className="h-5 w-5 text-primary" />
+                                        <div>
+                                            <p className="text-sm font-bold">{ds.file_name}</p>
+                                            <p className="text-[10px] text-zinc-500">{new Date(ds.upload_date).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <Link to={`/dashboard/insights?id=${ds.id}`}>
+                                        <ArrowUpRight className="h-4 w-4 text-primary" />
+                                    </Link>
+                                </div>
+                            ))}
+                            {recentDatasets.length === 0 && !loading && (
+                                <p className="text-center text-zinc-500 text-sm py-4">No datasets found.</p>
+                            )}
+                        </div>
+                    </DashboardWidget>
+                </div>
+
+                <div key="summary">
+                    <DashboardWidget id="summary" title="AI Summary" isDraggable={isEditing}>
+                        <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 text-white h-full relative overflow-hidden">
+                            <Sparkles className="absolute top-0 right-0 p-2 opacity-10 h-16 w-16" />
+                            <h5 className="font-bold mb-2">Pro Tip</h5>
+                            <p className="text-xs text-white/80 leading-relaxed">
+                                Users with customizable dashboards are 40% more efficient at identifying trends. Try rearranging your widgets!
+                            </p>
+                        </div>
+                    </DashboardWidget>
+                </div>
+            </DashboardGrid>
+        </div >
     )
 }
 
