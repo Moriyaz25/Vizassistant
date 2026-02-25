@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Database, Calendar, Trash2, ArrowRight, Loader2, Search, FileText, ChevronRight } from 'lucide-react'
-import { supabase } from '../services/supabase'
+import { db } from '../services/firebase'
+import { collection, query, where, getDocs, deleteDoc, doc, writeBatch } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -20,14 +21,19 @@ const History = () => {
     const fetchHistory = async () => {
         setLoading(true)
         try {
-            const { data, error } = await supabase
-                .from('datasets')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('upload_date', { ascending: false })
-
-            if (error) throw error
-            setDatasets(data || [])
+            const q = query(
+                collection(db, 'datasets'),
+                where('user_id', '==', user.uid)
+            )
+            const querySnapshot = await getDocs(q)
+            const data = querySnapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    upload_date: doc.data().upload_date?.toDate?.()?.toISOString() || new Date().toISOString()
+                }))
+                .sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date))
+            setDatasets(data)
         } catch (err) {
             console.error('Error fetching history:', err)
         } finally {
@@ -39,16 +45,22 @@ const History = () => {
         if (!confirm('Are you sure you want to delete this dataset? All associated insights and charts will be lost.')) return
 
         try {
-            // Manually delete related data first to avoid FK constraints
-            await supabase.from('insights').delete().eq('dataset_id', id)
-            await supabase.from('charts').delete().eq('dataset_id', id)
+            const batch = writeBatch(db)
 
-            const { error } = await supabase
-                .from('datasets')
-                .delete()
-                .eq('id', id)
+            // Delete insights
+            const insightsQuery = query(collection(db, 'insights'), where('dataset_id', '==', id))
+            const insightsSnap = await getDocs(insightsQuery)
+            insightsSnap.forEach(doc => batch.delete(doc.ref))
 
-            if (error) throw error
+            // Delete charts
+            const chartsQuery = query(collection(db, 'charts'), where('dataset_id', '==', id))
+            const chartsSnap = await getDocs(chartsQuery)
+            chartsSnap.forEach(doc => batch.delete(doc.ref))
+
+            // Delete dataset
+            batch.delete(doc(db, 'datasets', id))
+
+            await batch.commit()
             setDatasets(datasets.filter(d => d.id !== id))
         } catch (err) {
             console.error('Delete error:', err)

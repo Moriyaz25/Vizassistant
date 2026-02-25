@@ -2,7 +2,8 @@ import { useAuth } from '../context/AuthContext'
 import { User, Mail, Shield, Zap, LogOut, Clock, Database, BarChart3, Upload } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { supabase } from '../services/supabase'
+import { db } from '../services/firebase'
+import { collection, query, where, getCountFromServer } from 'firebase/firestore'
 
 const Profile = () => {
     const { user, signOut, updateProfile } = useAuth()
@@ -31,49 +32,18 @@ const Profile = () => {
         }
     }
 
-    const handleImageUpload = async (event) => {
-        try {
-            setUploading(true)
-            const file = event.target.files[0]
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`
-            const filePath = `avatars/${fileName}`
-
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file)
-
-            if (uploadError) throw uploadError
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath)
-
-            await updateProfile({ avatar_url: publicUrl })
-        } catch (err) {
-            console.error('Error uploading image:', err)
-            alert('Error uploading image. Make sure you have an "avatars" bucket in Supabase storage with public access.')
-        } finally {
-            setUploading(false)
-        }
-    }
-
     const fetchUserStats = async () => {
         try {
-            const { count: dsCount } = await supabase
-                .from('datasets')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id)
+            const dsQuery = query(collection(db, 'datasets'), where('user_id', '==', user.uid))
+            const dsSnap = await getCountFromServer(dsQuery)
 
-            const { count: insightCount } = await supabase
-                .from('insights')
-                .select('*, datasets!inner(*)', { count: 'exact', head: true })
-                .eq('datasets.user_id', user.id)
+            const insightQuery = query(collection(db, 'insights'), where('user_id', '==', user.uid))
+            const insightSnap = await getCountFromServer(insightQuery)
 
             setStats({
-                datasets: dsCount || 0,
-                charts: insightCount || 0,
-                memberSince: new Date(user.created_at).toLocaleDateString('en-US', {
+                datasets: dsSnap.data().count || 0,
+                charts: insightSnap.data().count || 0,
+                memberSince: new Date(user.metadata.creationTime).toLocaleDateString('en-US', {
                     month: 'long',
                     year: 'numeric'
                 })
@@ -135,10 +105,9 @@ const Profile = () => {
                                     </div>
                                 </div>
                                 {isEditing && (
-                                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-[2rem] cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Upload className="h-6 w-6 text-white" />
-                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-                                    </label>
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-[10px] text-white font-bold text-center px-2">Storage disabled on Free Plan</p>
+                                    </div>
                                 )}
                             </div>
                             <div className="flex-1">

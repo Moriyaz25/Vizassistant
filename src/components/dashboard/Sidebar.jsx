@@ -1,17 +1,20 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Home, LayoutDashboard, Upload, BarChart3, History, User, LogOut, ChevronRight } from 'lucide-react'
+import { Home, LayoutDashboard, Upload, BarChart3, History, User, LogOut, ChevronRight, Moon, Sun, GitMerge } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import { cn } from '../../utils/cn'
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const location = useLocation()
     const { signOut } = useAuth()
+    const { theme, toggleTheme } = useTheme()
 
     const links = [
         { name: 'Home', href: '/', icon: Home },
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Upload Data', href: '/dashboard/upload', icon: Upload },
+        { name: 'Data Modeler', href: '/dashboard/modeler', icon: GitMerge },
         { name: 'Insights', href: '/dashboard/insights', icon: BarChart3 },
         { name: 'History', href: '/dashboard/history', icon: History },
         { name: 'Profile', href: '/dashboard/profile', icon: User },
@@ -71,7 +74,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 })}
             </div>
 
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border space-y-2">
+                <button
+                    onClick={toggleTheme}
+                    className="flex items-center justify-between w-full px-3 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-muted/50 transition-colors group"
+                >
+                    <div className="flex items-center gap-3">
+                        {theme === 'dark' ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-primary" />}
+                        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                    </div>
+                </button>
                 <button
                     onClick={() => signOut()}
                     className="flex items-center space-x-3 w-full px-3 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors group"

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Database, BarChart3, Sparkles, Clock, ArrowUpRight, Plus, FileText, ChevronRight } from 'lucide-react'
-import { supabase } from '../services/supabase'
+import { db } from '../services/firebase'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
 import DashboardGrid, { DashboardWidget } from '../components/dashboard/DashboardGrid'
@@ -63,31 +64,33 @@ const DashboardHome = () => {
             if (!user) return
 
             try {
-                // Fetch counts from Supabase
-                const { count: datasetsCount } = await supabase
-                    .from('datasets')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id)
+                // Fetch all datasets for this user (sort client-side to avoid composite index)
+                const datasetsQuery = query(
+                    collection(db, 'datasets'),
+                    where('user_id', '==', user.uid)
+                )
+                const datasetsSnap = await getDocs(datasetsQuery)
+                const allDatasets = datasetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
-                const { count: insightsCount } = await supabase
-                    .from('insights')
-                    .select('*, datasets!inner(*)', { count: 'exact', head: true })
-                    .eq('datasets.user_id', user.id)
+                // Sort by upload_date desc and take 5 most recent
+                const recentData = [...allDatasets]
+                    .sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date))
+                    .slice(0, 5)
 
-                const { data: recent } = await supabase
-                    .from('datasets')
-                    .select('id, file_name, upload_date, row_count')
-                    .eq('user_id', user.id)
-                    .order('upload_date', { ascending: false })
-                    .limit(5)
+                // Fetch insights count from Firestore
+                const insightsQuery = query(
+                    collection(db, 'insights'),
+                    where('user_id', '==', user.uid)
+                )
+                const insightsSnap = await getDocs(insightsQuery)
 
                 setStats({
-                    datasets: datasetsCount || 0,
-                    charts: (insightsCount || 0) * 1.5, // Estimated visuals
-                    insights: insightsCount || 0,
-                    lastUpload: recent?.[0] || null
+                    datasets: allDatasets.length,
+                    charts: (insightsSnap.size || 0) * 1.5,
+                    insights: insightsSnap.size || 0,
+                    lastUpload: recentData?.[0] || null
                 })
-                setRecentDatasets(recent || [])
+                setRecentDatasets(recentData)
             } catch (err) {
                 console.error('Error fetching stats:', err)
             } finally {
@@ -116,10 +119,11 @@ const DashboardHome = () => {
     }
 
     return (
+        <div className="space-y-8">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-3xl font-black tracking-tight text-foreground">
-                        Welcome, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                        Welcome, {user?.displayName || user?.email?.split('@')[0]}
                     </h2>
                     <p className="text-zinc-500 mt-1 font-medium">Customize your data workspace.</p>
                 </div>
@@ -242,7 +246,7 @@ const DashboardHome = () => {
                     </DashboardWidget>
                 </div>
             </DashboardGrid>
-        </div >
+        </div>
     )
 }
 

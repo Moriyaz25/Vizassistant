@@ -4,7 +4,8 @@ import { TrendingUp, Zap, Loader2, AlertTriangle, Sparkles, Database, MessageSqu
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
 import { generateInsights, askAI } from '../services/aiService'
-import { supabase } from '../services/supabase'
+import { db } from '../services/firebase'
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import ChartGenerator from '../components/charts/ChartGenerator'
 
 const InsightsPage = () => {
@@ -27,33 +28,23 @@ const InsightsPage = () => {
             setError(null)
             try {
                 // Fetch dataset details
-                const { data, error: dbError } = await supabase
-                    .from('datasets')
-                    .select('*')
-                    .eq('id', id)
-                    .single()
+                const docRef = doc(db, 'datasets', id)
+                const docSnap = await getDoc(docRef)
 
-                if (dbError) throw dbError
-                if (!data) {
+                if (!docSnap.exists()) {
                     setError("Dataset not found.")
                     setLoading(false)
                     return
                 }
+                const data = { id: docSnap.id, ...docSnap.data() }
                 setDataset(data)
 
                 // Check if insights already exist for this dataset
-                const { data: existingInsights, error: insightError } = await supabase
-                    .from('insights')
-                    .select('summary_text')
-                    .eq('dataset_id', id)
-                    .limit(1)
+                const q = query(collection(db, 'insights'), where('dataset_id', '==', id))
+                const querySnapshot = await getDocs(q)
 
-                if (insightError) {
-                    console.error("Error fetching existing insights:", insightError)
-                }
-
-                if (existingInsights && existingInsights.length > 0) {
-                    setInsights(existingInsights[0].summary_text)
+                if (!querySnapshot.empty) {
+                    setInsights(querySnapshot.docs[0].data().summary_text)
                 } else if (data && data.raw_data) {
                     // Auto-generate insights if not present
                     handleGenerateInsights(data.raw_data)
@@ -90,12 +81,13 @@ const InsightsPage = () => {
             } else {
                 setInsights(aiResult)
                 // Save insights back to DB
-                const { error: saveError } = await supabase.from('insights').insert([{
-                    dataset_id: datasetId,
-                    summary_text: aiResult
-                }])
-
-                if (saveError) {
+                try {
+                    await addDoc(collection(db, 'insights'), {
+                        dataset_id: datasetId,
+                        summary_text: aiResult,
+                        created_at: serverTimestamp()
+                    })
+                } catch (saveError) {
                     console.error("Error saving insights:", saveError)
                 }
             }

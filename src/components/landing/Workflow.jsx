@@ -1,60 +1,85 @@
 import { motion } from 'framer-motion'
-import { Upload, Search, BarChart3, Download, ChevronRight } from 'lucide-react'
+import { Upload, Search, BarChart3, Download, ChevronRight, Sparkles } from 'lucide-react'
 
 const steps = [
     {
         title: 'Upload',
-        description: 'Drag & drop your CSV or Excel files.',
+        description: 'Drag & drop your CSV or Excel files with ease.',
         icon: Upload,
-        color: 'bg-blue-500'
+        color: 'text-blue-400',
+        bg: 'bg-blue-500/10',
+        glow: 'shadow-[0_0_20px_rgba(59,130,246,0.2)]'
     },
     {
         title: 'Analyze',
-        description: 'AI automatically detects trends & patterns.',
+        description: 'Our AI automatically architects trends & patterns for you.',
         icon: Search,
-        color: 'bg-purple-500'
+        color: 'text-purple-400',
+        bg: 'bg-purple-500/10',
+        glow: 'shadow-[0_0_20px_rgba(168,85,247,0.2)]'
     },
     {
         title: 'Visualize',
-        description: 'Generate stunning charts instantly.',
+        description: 'Generate stunning, interactive charts in milliseconds.',
         icon: BarChart3,
-        color: 'bg-primary'
+        color: 'text-primary',
+        bg: 'bg-primary/10',
+        glow: 'shadow-[0_0_20px_rgba(139,92,246,0.2)]'
     },
     {
-        title: 'Download',
-        description: 'Export your reports as PNG or PDF.',
+        title: 'Export',
+        description: 'Download high-fidelity reports in PNG or PDF formats.',
         icon: Download,
-        color: 'bg-green-500'
+        color: 'text-cyan-400',
+        bg: 'bg-cyan-500/10',
+        glow: 'shadow-[0_0_20px_rgba(34,211,238,0.2)]'
     }
 ]
 
 const Workflow = () => {
     return (
-        <section id="workflow" className="py-24 bg-muted/30">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center max-w-3xl mx-auto mb-20">
+        <section id="workflow" className="py-20 relative overflow-hidden bg-[#0a0a0f]">
+            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                {/* Section header */}
+                <div className="text-center max-w-2xl mx-auto mb-14">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-bold text-primary tracking-[0.12em] uppercase mb-4"
+                    >
+                        <Sparkles className="h-3 w-3" />
+                        Seamless Experience
+                    </motion.div>
+
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-base font-semibold text-primary uppercase tracking-wider mb-3"
+                        className="text-3xl md:text-5xl font-black text-white mb-4 tracking-[-0.03em] leading-tight"
                     >
-                        Process
+                        How It{' '}
+                        <span className="bg-gradient-to-r from-white/30 via-white/50 to-white/20 bg-clip-text text-transparent">
+                            Works.
+                        </span>
                     </motion.h2>
+
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-3xl md:text-5xl font-bold text-foreground mb-6"
+                        className="text-base text-white/50 leading-relaxed tracking-wide"
                     >
-                        How Vizassistance Works
+                        From raw data to actionable intelligence in four simple, automated steps.
                     </motion.p>
                 </div>
 
                 <div className="relative">
-                    {/* Connection Line (Desktop) */}
-                    <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 via-primary to-green-500 opacity-20 -translate-y-1/2" />
+                    {/* Connection line */}
+                    <div className="hidden lg:block absolute top-[44px] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {steps.map((step, index) => (
@@ -63,21 +88,22 @@ const Workflow = () => {
                                 initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                transition={{ duration: 0.6, delay: index * 0.1 }}
                                 className="relative flex flex-col items-center text-center group"
                             >
-                                <div className={`relative z-10 w-20 h-20 ${step.color} rounded-full flex items-center justify-center text-white shadow-2xl mb-8 group-hover:scale-110 transition-transform duration-300`}>
-                                    <step.icon className="w-10 h-10" />
-                                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-card rounded-full flex items-center justify-center text-foreground font-bold text-sm border border-border">
+                                <div className={`relative z-10 w-20 h-20 ${step.bg} rounded-[1.5rem] flex items-center justify-center border border-white/5 shadow-2xl mb-7 group-hover:scale-110 group-hover:border-primary/50 transition-all duration-500 ${step.glow}`}>
+                                    <step.icon className={`w-9 h-9 ${step.color}`} />
+
+                                    <div className="absolute -top-2.5 -right-2.5 w-8 h-8 glass rounded-xl flex items-center justify-center text-white font-black text-xs border border-white/10 shadow-lg group-hover:bg-primary group-hover:border-primary transition-colors duration-500">
                                         {index + 1}
                                     </div>
                                 </div>
 
-                                <h3 className="text-2xl font-bold text-foreground mb-4">{step.title}</h3>
-                                <p className="text-muted-foreground text-lg">{step.description}</p>
+                                <h3 className="text-xl font-black text-white mb-2 group-hover:text-primary transition-colors tracking-tight">{step.title}</h3>
+                                <p className="text-white/40 text-sm leading-relaxed px-2">{step.description}</p>
 
                                 {index < steps.length - 1 && (
-                                    <div className="hidden lg:block absolute top-[40px] -right-[15%] text-muted-foreground/30">
+                                    <div className="hidden lg:block absolute top-[44px] -right-[10%] text-white/5 group-hover:text-primary/20 transition-colors duration-500">
                                         <ChevronRight className="w-8 h-8" />
                                     </div>
                                 )}

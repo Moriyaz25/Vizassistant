@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, FileText, CheckCircle2, Loader2, AlertCircle, Database, ArrowRight, Table as TableIcon } from 'lucide-react'
 import FileUpload from '../components/dashboard/FileUpload'
 import { parseFile } from '../utils/fileParser'
-import { supabase } from '../services/supabase'
+import { db } from '../services/firebase'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -37,26 +38,18 @@ const UploadData = () => {
 
         setIsSaving(true)
         try {
-            // Store dataset entry in Supabase
-            const { data: dataset, error: dbError } = await supabase
-                .from('datasets')
-                .insert([
-                    {
-                        user_id: user.id,
-                        file_name: file.name,
-                        upload_date: new Date().toISOString(),
-                        row_count: data.length,
-                        column_count: Object.keys(data[0] || {}).length,
-                        raw_data: data
-                    }
-                ])
-                .select()
-                .single()
-
-            if (dbError) throw dbError
+            // Store dataset entry in Firestore
+            const docRef = await addDoc(collection(db, 'datasets'), {
+                user_id: user.uid,
+                file_name: file.name,
+                upload_date: serverTimestamp(),
+                row_count: data.length,
+                column_count: Object.keys(data[0] || {}).length,
+                raw_data: data
+            })
 
             // Redirect to insights with the new dataset ID
-            navigate(`/dashboard/insights?id=${dataset.id}`)
+            navigate(`/dashboard/insights?id=${docRef.id}`)
         } catch (err) {
             setError(err.message || "Failed to save dataset")
         } finally {

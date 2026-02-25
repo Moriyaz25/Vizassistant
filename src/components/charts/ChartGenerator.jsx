@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
@@ -28,11 +28,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 const ChartGenerator = ({ data }) => {
-    if (!data || data.length === 0) return null
+    const [chartType, setChartType] = useState('area')
 
-    const keys = Object.keys(data[0])
+    const keys = data && data.length > 0 ? Object.keys(data[0]) : []
 
-    // Improved detection: check if first non-null value is a number or numeric string
     const isNumeric = (val) => {
         if (typeof val === 'number') return true;
         if (typeof val !== 'string') return false;
@@ -46,13 +45,27 @@ const ChartGenerator = ({ data }) => {
 
     const categoricalKeys = keys.filter(key => !numericKeys.includes(key))
 
-    const [chartType, setChartType] = useState('area')
-    const [xAxisKey, setXAxisKey] = useState(categoricalKeys.length > 0 ? categoricalKeys[0] : keys[0])
-    const [yAxisKey, setYAxisKey] = useState(numericKeys.length > 0 ? numericKeys[0] : keys[1] || keys[0])
+    const [xAxisKey, setXAxisKey] = useState(categoricalKeys.length > 0 ? categoricalKeys[0] : keys[0] || '')
+    const [yAxisKey, setYAxisKey] = useState(numericKeys.length > 0 ? numericKeys[0] : keys[1] || keys[0] || '')
+
+    // Synchronize keys when data is loaded asynchronously
+    useEffect(() => {
+        if (data && data.length > 0) {
+            const hasValidX = xAxisKey && keys.includes(xAxisKey)
+            const hasValidY = yAxisKey && keys.includes(yAxisKey)
+
+            if (!hasValidX) {
+                setXAxisKey(categoricalKeys.length > 0 ? categoricalKeys[0] : keys[0] || '')
+            }
+            if (!hasValidY) {
+                setYAxisKey(numericKeys.length > 0 ? numericKeys[0] : keys[1] || keys[0] || '')
+            }
+        }
+    }, [data, keys, categoricalKeys, numericKeys, xAxisKey, yAxisKey])
 
     // DATA AGGREGATION LOGIC
     const aggregatedData = useMemo(() => {
-        if (!data || data.length === 0) return []
+        if (!data || data.length === 0 || !xAxisKey || !yAxisKey) return []
 
         // 1. Group and Sum values
         const groups = data.reduce((acc, curr) => {
@@ -305,7 +318,7 @@ const ChartGenerator = ({ data }) => {
                         <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">{yAxisKey} vs {xAxisKey}</h3>
                         <p className="text-xs text-muted-foreground">Visualizing {data.length} data points</p>
                     </div>
-                    <div className="flex-grow w-full h-[400px]">
+                    <div className="flex-grow w-full min-h-[450px] h-[450px]">
                         {renderChart()}
                     </div>
                 </div>

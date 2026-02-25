@@ -1,5 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../services/supabase'
+import { auth } from '../services/firebase'
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signOut as firebaseSignOut,
+    updateProfile as firebaseUpdateProfile
+} from 'firebase/auth'
 
 const AuthContext = createContext({})
 
@@ -10,41 +19,41 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Check active sessions and sets the user
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(session?.user ?? null)
-            setLoading(false)
-        }
-
-        getSession()
-
-        // Listen for changes on auth state (logged in, signed out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null)
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user)
             setLoading(false)
         })
 
-        return () => subscription.unsubscribe()
+        return unsubscribe
     }, [])
 
     const value = {
-        signUp: (data) => supabase.auth.signUp(data),
-        signIn: (data) => supabase.auth.signInWithPassword(data),
-        signInWithGoogle: () => supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin
-            }
-        }),
-        signOut: () => supabase.auth.signOut(),
-        updateProfile: async (updates) => {
-            const { data, error } = await supabase.auth.updateUser({
-                data: updates
+        signUp: ({ email, password, options }) => {
+            return createUserWithEmailAndPassword(auth, email, password).then((userCredential) => {
+                if (options?.data?.full_name) {
+                    return firebaseUpdateProfile(userCredential.user, {
+                        displayName: options.data.full_name
+                    })
+                }
+                return userCredential
             })
-            if (error) throw error
-            setUser(data.user)
-            return data.user
+        },
+        signIn: ({ email, password }) => signInWithEmailAndPassword(auth, email, password),
+        signInWithGoogle: () => {
+            const provider = new GoogleAuthProvider()
+            return signInWithPopup(auth, provider)
+        },
+        signOut: () => firebaseSignOut(auth),
+        updateProfile: async (updates) => {
+            if (!auth.currentUser) throw new Error('No user logged in')
+
+            const profileUpdates = {}
+            if (updates.full_name) profileUpdates.displayName = updates.full_name
+            if (updates.avatar_url) profileUpdates.photoURL = updates.avatar_url
+
+            await firebaseUpdateProfile(auth.currentUser, profileUpdates)
+            setUser({ ...auth.currentUser })
+            return auth.currentUser
         },
         user,
         loading
@@ -52,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     )
 }

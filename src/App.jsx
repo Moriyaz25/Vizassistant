@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
@@ -8,31 +9,34 @@ import UploadData from './pages/UploadData'
 import InsightsPage from './pages/InsightsPage'
 import History from './pages/History'
 import Profile from './pages/Profile'
+import DataModeler from './pages/DataModeler'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Auth />} />
-          <Route path="/signup" element={<Auth />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Auth />} />
+            <Route path="/signup" element={<Auth />} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />}>
-              <Route index element={<DashboardHome />} />
-              <Route path="upload" element={<UploadData />} />
-              <Route path="insights" element={<InsightsPage />} />
-              <Route path="history" element={<History />} />
-              <Route path="profile" element={<Profile />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />}>
+                <Route index element={<DashboardHome />} />
+                <Route path="upload" element={<UploadData />} />
+                <Route path="insights" element={<InsightsPage />} />
+                <Route path="history" element={<History />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="modeler" element={<DataModeler />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 
 export default App
-

@@ -17,25 +17,23 @@ export async function fetchDataWithRetry(url, options, retries = 5, delay = 1000
                 const retryAfter = response.headers.get('Retry-After');
                 let waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
 
-                // Add jitter (e.g., up to 25% of the wait time)
-                waitTime = waitTime * (0.75 + Math.random() * 0.5); // Randomize between 75% and 125% of waitTime
+                // Add jitter
+                waitTime = waitTime * (0.75 + Math.random() * 0.5);
 
                 console.warn(`Rate limit hit. Retrying in ${Math.round(waitTime / 1000)} seconds... (Attempts left: ${retries})`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
-                return fetchDataWithRetry(url, options, retries - 1, delay * 2); // Exponential backoff
-            } else {
-                throw new Error("Maximum retries exceeded for rate limit.");
+                return fetchDataWithRetry(url, options, retries - 1, delay * 2);
             }
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: response.statusText }));
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
         }
 
         return response;
 
     } catch (error) {
+        if (error instanceof TypeError && retries > 0) {
+            console.warn(`Network error or timeout. Retrying in ${Math.round(delay / 1000)} seconds... (Attempts left: ${retries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return fetchDataWithRetry(url, options, retries - 1, delay * 2);
+        }
         console.error("Fetch failed:", error);
         throw error;
     }
