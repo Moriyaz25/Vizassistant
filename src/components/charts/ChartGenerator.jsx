@@ -117,7 +117,7 @@ const ChartGenerator = ({ data }) => {
         switch (chartType) {
             case 'area':
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={420}>
                         <AreaChart {...commonProps}>
                             <Defs />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
@@ -155,7 +155,7 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'bar':
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={420}>
                         <BarChart {...commonProps}>
                             <Defs />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
@@ -188,7 +188,7 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'line':
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={420}>
                         <LineChart {...commonProps}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
                             <XAxis
@@ -222,7 +222,7 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'pie':
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={420}>
                         <PieChart>
                             <Pie
                                 data={aggregatedData}
@@ -311,14 +311,14 @@ const ChartGenerator = ({ data }) => {
                 </div>
             </div>
 
-            <div className="relative group overflow-hidden">
+            <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-blue-500/10 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-                <div className="relative bg-card w-full p-4 sm:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-sm flex flex-col" style={{ minHeight: 'clamp(320px, 50vw, 550px)' }}>
+                <div className="relative bg-card w-full p-4 sm:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-sm">
                     <div className="mb-4">
                         <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">{yAxisKey} vs {xAxisKey}</h3>
                         <p className="text-xs text-muted-foreground">Visualizing {data.length} data points</p>
                     </div>
-                    <div className="flex-grow w-full" style={{ minHeight: 'clamp(280px, 40vw, 450px)' }}>
+                    <div style={{ width: '100%', height: 420 }}>
                         {renderChart()}
                     </div>
                 </div>
