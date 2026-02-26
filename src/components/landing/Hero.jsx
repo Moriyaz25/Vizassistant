@@ -131,12 +131,17 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-4xl sm:text-5xl md:text-7xl lg:text-[82px] font-black tracking-[-0.04em] text-white mb-6 leading-[1.05] max-w-5xl"
+                    className="font-black tracking-[-0.04em] text-white mb-6 w-full text-center"
+                    style={{ fontSize: 'clamp(2rem, 9vw, 5.125rem)', lineHeight: 1.08 }}
                 >
-                    From Raw Data to{' '}
-                    <br className="hidden sm:block" />
-                    {/* Typewriter with cursive Playfair Display italic */}
-                    <span className="relative inline-block min-h-[1.1em]">
+                    {/* Static first line */}
+                    <span className="block">From Raw Data to</span>
+
+                    {/* Typed row — fixed height prevents layout shift on mobile */}
+                    <span
+                        className="block relative pb-3"
+                        style={{ minHeight: '1.2em' }}
+                    >
                         <span
                             className="bg-gradient-to-r from-violet-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent"
                             style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontWeight: 900 }}
@@ -147,10 +152,11 @@ const Hero = () => {
                         <motion.span
                             animate={{ opacity: [1, 0, 1] }}
                             transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                            className="inline-block ml-1 w-[3px] h-[0.85em] bg-violet-400 rounded-full align-middle"
+                            className="inline-block ml-1 w-[2px] sm:w-[3px] bg-violet-400 rounded-full align-middle"
+                            style={{ height: '0.8em' }}
                         />
                         {/* underline accent */}
-                        <span className="absolute -bottom-2 left-0 w-full h-[3px] bg-gradient-to-r from-violet-500/0 via-violet-400 to-cyan-400/0 rounded-full" />
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] sm:h-[3px] bg-gradient-to-r from-violet-500/0 via-violet-400/80 to-cyan-400/0 rounded-full pointer-events-none" />
                     </span>
                 </motion.h1>
 
