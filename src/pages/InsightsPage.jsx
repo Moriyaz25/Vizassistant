@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { TrendingUp, Zap, Loader2, AlertTriangle, Sparkles, Database, MessageSquare, Send, ArrowLeft } from 'lucide-react'
+import { TrendingUp, Zap, Loader2, AlertTriangle, Sparkles, Database, MessageSquare, Send, ArrowLeft, Download, FileText, Image, FileDown, ChevronDown } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { generateInsights, askAI } from '../services/aiService'
 import { db } from '../services/firebase'
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import ChartGenerator from '../components/charts/ChartGenerator'
+import { downloadChartAsPNG, exportFullReportAsPDF, exportDataAsCSV, exportInsightsAsTxt } from '../utils/downloadUtils'
 
 const InsightsPage = () => {
     const [searchParams] = useSearchParams()
@@ -17,17 +18,32 @@ const InsightsPage = () => {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
 
+    // Download state
+    const [downloading, setDownloading] = useState(false)
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false)
+    const downloadMenuRef = useRef(null)
+
     // Chat State
     const [query, setQuery] = useState('')
     const [chatHistory, setChatHistory] = useState([])
     const [chatLoading, setChatLoading] = useState(false)
+
+    // Close download menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target)) {
+                setShowDownloadMenu(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
 
     useEffect(() => {
         const fetchDataset = async (id) => {
             setLoading(true)
             setError(null)
             try {
-                // Fetch dataset details
                 const docRef = doc(db, 'datasets', id)
                 const docSnap = await getDoc(docRef)
 
@@ -46,7 +62,6 @@ const InsightsPage = () => {
                 if (!querySnapshot.empty) {
                     setInsights(querySnapshot.docs[0].data().summary_text)
                 } else if (data && data.raw_data) {
-                    // Auto-generate insights if not present
                     handleGenerateInsights(data.raw_data)
                 }
             } catch (err) {
@@ -61,11 +76,25 @@ const InsightsPage = () => {
         }
     }, [datasetId])
 
+    const handleDownload = async (type) => {
+        setShowDownloadMenu(false)
+        setDownloading(true)
+        try {
+            const name = dataset?.file_name?.replace(/\.[^.]+$/, '') || 'analysis'
+            if (type === 'png') await downloadChartAsPNG('chart-capture', `${name}_chart.png`)
+            else if (type === 'pdf') await exportFullReportAsPDF('chart-capture', insights, name)
+            else if (type === 'csv') exportDataAsCSV(dataset?.raw_data || [], `${name}.csv`)
+            else if (type === 'txt') exportInsightsAsTxt(insights, `${name}_insights.txt`)
+        } finally {
+            setDownloading(false)
+        }
+    }
+
     const handleGenerateInsights = useCallback(async (dataToAnalyze) => {
         if (!dataToAnalyze || dataToAnalyze.length === 0) return
 
         setLoading(true)
-        setError(null) // Clear previous errors
+        setError(null)
         try {
             const aiResult = await generateInsights(dataToAnalyze)
 
@@ -80,7 +109,6 @@ const InsightsPage = () => {
                 setError(aiResult.replace("ERROR: ", ""))
             } else {
                 setInsights(aiResult)
-                // Save insights back to DB
                 try {
                     await addDoc(collection(db, 'insights'), {
                         dataset_id: datasetId,
@@ -150,9 +178,60 @@ const InsightsPage = () => {
                         <p className="text-zinc-500 font-medium">Analyzing: {dataset?.file_name || 'Loading...'}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-full text-xs font-bold uppercase tracking-widest">
-                    <Sparkles className="h-3 w-3" />
-                    Groq AI (Llama 3) Active
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-full text-xs font-bold uppercase tracking-widest">
+                        <Sparkles className="h-3 w-3" />
+                        Groq AI Active
+                    </div>
+
+                    {/* Download Dropdown */}
+                    <div className="relative" ref={downloadMenuRef}>
+                        <button
+                            onClick={() => setShowDownloadMenu(v => !v)}
+                            disabled={downloading || !dataset}
+                            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                            {downloading
+                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Exporting...</>
+                                : <><Download className="h-4 w-4" /> Export <ChevronDown className="h-3 w-3" /></>
+                            }
+                        </button>
+
+                        <AnimatePresence>
+                            {showDownloadMenu && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 top-full mt-2 w-52 bg-card border border-border rounded-2xl shadow-2xl shadow-black/30 overflow-hidden z-50"
+                                >
+                                    {[
+                                        { type: 'pdf', icon: FileText, label: 'Full Report', sub: 'Chart + AI insights (PDF)', color: 'text-red-400' },
+                                        { type: 'png', icon: Image, label: 'Chart Image', sub: 'High-res PNG', color: 'text-blue-400' },
+                                        { type: 'csv', icon: FileDown, label: 'Raw Data', sub: 'Spreadsheet (CSV)', color: 'text-green-400' },
+                                        { type: 'txt', icon: FileText, label: 'AI Insights', sub: 'Plain text report', color: 'text-purple-400' },
+                                    ].map(item => (
+                                        <button
+                                            key={item.type}
+                                            onClick={() => handleDownload(item.type)}
+                                            disabled={item.type === 'txt' && !insights}
+                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-left group disabled:opacity-40"
+                                        >
+                                            <div className={`p-1.5 rounded-lg bg-muted group-hover:scale-110 transition-transform`}>
+                                                <item.icon className={`h-4 w-4 ${item.color}`} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-foreground">{item.label}</p>
+                                                <p className="text-[10px] text-zinc-500">{item.sub}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </header>
 
@@ -180,6 +259,7 @@ const InsightsPage = () => {
 
                     {/* Visual Analytics */}
                     <motion.div
+                        id="chart-capture"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-full"
@@ -296,4 +376,3 @@ const InsightsPage = () => {
 }
 
 export default InsightsPage
-

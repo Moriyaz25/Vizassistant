@@ -11,8 +11,9 @@ import 'reactflow/dist/style.css';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
-import { Database, Plus, Play, Info, Trash2, GitMerge } from 'lucide-react';
+import { Database, Plus, Play, Info, Trash2, GitMerge, Download } from 'lucide-react';
 import { performJoin } from '../utils/joinUtils';
+import { exportDataAsCSV } from '../utils/downloadUtils';
 
 const initialNodes = [];
 const initialEdges = [];
@@ -159,7 +160,16 @@ const DataModeler = () => {
                             <GitMerge className="h-5 w-5" />
                             <h3 className="font-bold">Join Successful</h3>
                         </div>
-                        <span className="text-xs text-muted-foreground">{joinedResult.length} rows generated</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{joinedResult.length} rows generated</span>
+                            <button
+                                onClick={() => exportDataAsCSV(joinedResult, 'joined_result.csv')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-500 text-xs font-bold rounded-lg hover:bg-green-500/20 transition-colors"
+                            >
+                                <Download className="h-3.5 w-3.5" />
+                                Download CSV
+                            </button>
+                        </div>
                     </div>
                     <div className="max-h-40 overflow-auto rounded-lg border border-border">
                         <table className="w-full text-left text-xs">
