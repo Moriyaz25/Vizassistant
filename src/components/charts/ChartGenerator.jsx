@@ -111,13 +111,13 @@ const ChartGenerator = ({ data }) => {
     const renderChart = () => {
         const commonProps = {
             data: aggregatedData,
-            margin: { top: 20, right: 30, left: 10, bottom: 0 }
+            margin: { top: 10, right: 10, left: 0, bottom: 20 }
         }
 
         switch (chartType) {
             case 'area':
                 return (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <AreaChart {...commonProps}>
                             <Defs />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
@@ -155,7 +155,7 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'bar':
                 return (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <BarChart {...commonProps}>
                             <Defs />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
@@ -188,7 +188,7 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'line':
                 return (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <LineChart {...commonProps}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
                             <XAxis
@@ -222,14 +222,14 @@ const ChartGenerator = ({ data }) => {
                 )
             case 'pie':
                 return (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={aggregatedData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={80}
-                                outerRadius={140}
+                                innerRadius="25%"
+                                outerRadius="40%"
                                 paddingAngle={5}
                                 dataKey={yAxisKey}
                                 nameKey={xAxisKey}
@@ -251,7 +251,7 @@ const ChartGenerator = ({ data }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between p-6 bg-gradient-to-br from-card to-muted/20 rounded-2xl border border-border shadow-sm">
+            <div className="flex flex-col gap-4 items-start justify-between p-4 sm:p-6 bg-gradient-to-br from-card to-muted/20 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center space-x-3 mb-2 lg:mb-0">
                     <div className="bg-primary/10 p-2 rounded-lg">
                         <Settings2 className="h-5 w-5 text-primary" />
@@ -262,8 +262,8 @@ const ChartGenerator = ({ data }) => {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-                    <div className="flex flex-col space-y-1.5 min-w-[140px]">
+                <div className="flex flex-wrap gap-3 w-full">
+                    <div className="flex flex-col space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Type</label>
                         <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
                             {[
@@ -286,7 +286,7 @@ const ChartGenerator = ({ data }) => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5 min-w-[180px]">
+                    <div className="flex flex-col space-y-1.5 flex-1 min-w-[120px]">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">X Axis</label>
                         <select
                             value={xAxisKey}
@@ -297,7 +297,7 @@ const ChartGenerator = ({ data }) => {
                         </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5 min-w-[180px]">
+                    <div className="flex flex-col space-y-1.5 flex-1 min-w-[120px]">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Y Axis</label>
                         <select
                             value={yAxisKey}
@@ -311,14 +311,14 @@ const ChartGenerator = ({ data }) => {
                 </div>
             </div>
 
-            <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-blue-500/10 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative bg-card w-full p-8 rounded-2xl border border-border shadow-xl backdrop-blur-sm min-h-[500px] flex flex-col">
+            <div className="relative group overflow-hidden">
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-blue-500/10 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                <div className="relative bg-card w-full p-4 sm:p-8 rounded-2xl border border-border shadow-xl backdrop-blur-sm flex flex-col" style={{ minHeight: 'clamp(320px, 50vw, 550px)' }}>
                     <div className="mb-4">
                         <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">{yAxisKey} vs {xAxisKey}</h3>
                         <p className="text-xs text-muted-foreground">Visualizing {data.length} data points</p>
                     </div>
-                    <div className="flex-grow w-full min-h-[450px] h-[450px]">
+                    <div className="flex-grow w-full" style={{ minHeight: 'clamp(280px, 40vw, 450px)' }}>
                         {renderChart()}
                     </div>
                 </div>

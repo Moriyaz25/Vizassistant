@@ -25,18 +25,18 @@ const DashboardGrid = ({ layout, onLayoutChange, isDraggable, children }) => {
 
 export const DashboardWidget = ({ id, title, children, isDraggable }) => {
     return (
-        <div key={id} className="bg-card border border-border rounded-[2rem] shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
-            <div className={`p-4 border-b border-border flex items-center justify-between ${isDraggable ? 'cursor-move drag-handle' : ''}`}>
-                <h4 className="text-sm font-bold text-foreground">{title}</h4>
+        <div key={id} className="bg-white/[0.02] backdrop-blur-xl border border-white/5 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-white/10 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)] transition-all duration-300 overflow-hidden flex flex-col">
+            <div className={`px-5 py-3.5 border-b border-white/5 flex items-center justify-between ${isDraggable ? 'cursor-move drag-handle' : ''}`}>
+                <h4 className="text-xs font-black text-white/40 uppercase tracking-[0.15em]">{title}</h4>
                 {isDraggable && (
                     <div className="flex gap-1">
-                        <div className="w-1 h-1 rounded-full bg-zinc-300" />
-                        <div className="w-1 h-1 rounded-full bg-zinc-300" />
-                        <div className="w-1 h-1 rounded-full bg-zinc-300" />
+                        <div className="w-1 h-1 rounded-full bg-white/20" />
+                        <div className="w-1 h-1 rounded-full bg-white/20" />
+                        <div className="w-1 h-1 rounded-full bg-white/20" />
                     </div>
                 )}
             </div>
-            <div className="flex-1 p-6 overflow-auto">
+            <div className="flex-1 p-5 overflow-auto">
                 {children}
             </div>
         </div>
