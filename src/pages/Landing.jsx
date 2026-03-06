@@ -3,7 +3,8 @@ import Hero from '../components/landing/Hero'
 import Problem from '../components/landing/Problem'
 import Features from '../components/landing/Features'
 import Workflow from '../components/landing/Workflow'
-
+import Testimonials from '../components/landing/Testimonials'
+import FAQ from '../components/landing/FAQ'
 import CTA from '../components/landing/CTA'
 import Footer from '../components/landing/Footer'
 import { useEffect, useState } from 'react'
@@ -32,7 +33,8 @@ const Landing = () => {
                 <Problem />
                 <Features />
                 <Workflow />
-
+                <Testimonials />
+                <FAQ />
                 <CTA />
             </main>
             <Footer />

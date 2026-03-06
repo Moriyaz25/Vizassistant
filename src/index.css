@@ -84,21 +84,69 @@
 }
 
 @layer components {
+
+  /* Dark mode glass */
+  .dark .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.3)];
+  }
+
+  .dark .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.3)] rounded-3xl p-6 transition-all duration-300;
+  }
+
+  /* Light mode glass */
+  .light .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-black/5 shadow-[0_4px_24px_0_rgba(0, 0, 0, 0.06)];
+  }
+
+  .light .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-black/5 shadow-[0_4px_24px_0_rgba(0, 0, 0, 0.06)] rounded-3xl p-6 transition-all duration-300;
+  }
+
+  /* Fallback for non-prefixed (defaults to dark behaviour) */
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.3)];
   }
 
   .glass-card {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-3xl p-6 transition-all duration-300;
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.3)] rounded-3xl p-6 transition-all duration-300;
   }
 
   .neon-glow {
-    @apply shadow-[0_0_20px_rgba(139,92,246,0.3)] border-primary/50;
+    @apply shadow-[0_0_20px_rgba(139, 92, 246, 0.3)] border-primary/50;
   }
 
-  .text-gradient {
+  .dark .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-white/50;
   }
+
+  .light .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-gray-900 via-gray-800 to-gray-600;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  .light .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-black/10 rounded-full;
+  }
+}
+
+/* Light mode body override */
+.light body {
+  background-image:
+    radial-gradient(at 0% 0%, hsla(263, 70%, 50%, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(191, 91%, 50%, 0.03) 0px, transparent 50%);
 }
 
 .animate-float {
