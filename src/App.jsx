@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import DataModeler from './pages/DataModeler'
 import ProtectedRoute from './components/ProtectedRoute'
 import PageTransition from './components/layout/PageTransition'
+import PWAInstallPrompt from './components/ui/PWAInstallPrompt'
 import { AnimatePresence } from 'framer-motion'
 
 function AnimatedRoutes() {
@@ -44,6 +45,7 @@ function App() {
       <AuthProvider>
         <Router>
           <AnimatedRoutes />
+          <PWAInstallPrompt />
         </Router>
       </AuthProvider>
     </ThemeProvider>

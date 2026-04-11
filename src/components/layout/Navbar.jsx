@@ -4,6 +4,7 @@ import { Menu, X, BarChart3, LayoutDashboard, LogOut, User, Sparkles } from 'luc
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { cn } from '../../utils/cn'
+import ThemeToggle from '../ui/ThemeToggle'
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false)
@@ -52,7 +53,10 @@ const Navbar = () => {
                             </a>
                         ))}
 
-                        <div className="flex items-center space-x-6">
+                        <div className="flex items-center space-x-4">
+                            {/* Theme Toggle */}
+                            <ThemeToggle size="sm" />
+
                             {user ? (
                                 <>
                                     <Link
@@ -91,7 +95,8 @@ const Navbar = () => {
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="md:hidden">
+                    <div className="md:hidden flex items-center gap-3">
+                        <ThemeToggle size="sm" />
                         <button
                             onClick={() => setIsOpen(!isOpen)}
                             className="text-white p-2.5 rounded-xl hover:bg-white/5 border border-white/5 transition-colors"

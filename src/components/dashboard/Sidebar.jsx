@@ -1,14 +1,13 @@
-import { Home, LayoutDashboard, Upload, BarChart3, History, User, LogOut, ChevronRight, Moon, Sun, GitMerge, Sparkles } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Home, LayoutDashboard, Upload, BarChart3, History, User, LogOut, ChevronRight, GitMerge, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import { cn } from '../../utils/cn'
+import ThemeToggle from '../ui/ThemeToggle'
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const location = useLocation()
     const { signOut, user } = useAuth()
-    const { theme, toggleTheme } = useTheme()
 
     const links = [
         { name: 'Home', href: '/', icon: Home },
@@ -29,7 +28,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <div className="h-16 flex items-center px-5 border-b border-border justify-between">
                 <Link to="/" className="flex items-center space-x-3 group">
                     <div className="relative h-9 w-9 flex items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20 group-hover:scale-110 transition-transform duration-300">
-                        <Sparkles className="h-4.5 w-4.5 text-violet-400" />
+                        <Sparkles className="h-4 w-4 text-violet-400" />
                         <div className="absolute inset-0 bg-violet-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
                     </div>
                     <span className="text-lg font-black tracking-tighter text-foreground group-hover:text-violet-500 transition-colors duration-300">
@@ -81,7 +80,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         >
                             <div className="flex items-center gap-3">
                                 <link.icon className={cn(
-                                    "h-4.5 w-4.5 transition-colors",
+                                    "h-4 w-4 transition-colors",
                                     isActive ? "text-white" : "group-hover:text-violet-500"
                                 )} />
                                 <span>{link.name}</span>
@@ -97,24 +96,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </div>
 
             {/* Bottom actions */}
-            <div className="p-4 border-t border-border space-y-1">
-                <button
-                    onClick={toggleTheme}
-                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all group"
-                >
-                    <div className="flex items-center gap-3">
-                        {theme === 'dark'
-                            ? <Sun className="h-4.5 w-4.5 text-yellow-400" />
-                            : <Moon className="h-4.5 w-4.5 text-violet-500" />
-                        }
-                        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-                    </div>
-                </button>
+            <div className="p-4 border-t border-border space-y-3">
+                {/* Theme toggle row */}
+                <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-xs font-bold text-muted-foreground">Theme</span>
+                    <ThemeToggle size="sm" />
+                </div>
+
                 <button
                     onClick={() => signOut()}
                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-bold text-red-500/70 hover:bg-red-500/10 hover:text-red-500 transition-all"
                 >
-                    <LogOut className="h-4.5 w-4.5" />
+                    <LogOut className="h-4 w-4" />
                     <span>Logout</span>
                 </button>
             </div>
@@ -123,4 +116,3 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 }
 
 export default Sidebar
-
