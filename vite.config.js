@@ -51,6 +51,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB — fixes build error
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
         runtimeCaching: [
           {
@@ -79,6 +80,21 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'unsafe-none',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-firebase': ['firebase'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-charts': ['recharts', 'reactflow'],
+          'vendor-utils': ['xlsx', 'papaparse', 'jspdf', 'html2canvas'],
+          'vendor-ui': ['framer-motion', 'lucide-react'],
+        },
+      },
     },
   },
 })
