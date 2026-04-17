@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius: 0.5rem;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 92.5%;
+    --foreground: 232.9 58.6% 5.7%;
+    --card: 0 0% 97%;
+    --card-foreground: 232.9 58.6% 5.7%;
+    --popover: 0 0% 97%;
+    --popover-foreground: 232.9 58.6% 5.7%;
+    --primary: 224.2 56.4% 19.8%;
+    --primary-foreground: 0 0% 92.5%;
+    --secondary: 205.4 18.6% 72.5%;
+    --secondary-foreground: 232.9 58.6% 5.7%;
+    --muted: 210 18% 88%;
+    --muted-foreground: 214.9 21.9% 50.8%;
+    --accent: 214.9 21.9% 50.8%;
+    --accent-foreground: 0 0% 92.5%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 205 16% 80%;
+    --input: 205 16% 80%;
+    --ring: 214.9 21.9% 50.8%;
+  }
+
+  .dark {
+    --background: 232.9 58.6% 5.7%;
+    --foreground: 0 0% 92.5%;
+    --card: 224 44% 12%;
+    --card-foreground: 0 0% 92.5%;
+    --popover: 224 44% 12%;
+    --popover-foreground: 0 0% 92.5%;
+    --primary: 214.9 21.9% 50.8%;
+    --primary-foreground: 232.9 58.6% 5.7%;
+    --secondary: 224.2 56.4% 19.8%;
+    --secondary-foreground: 0 0% 92.5%;
+    --muted: 224 28% 16%;
+    --muted-foreground: 205.4 18.6% 72.5%;
+    --accent: 205.4 18.6% 72.5%;
+    --accent-foreground: 232.9 58.6% 5.7%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 224 28% 18%;
+    --input: 224 28% 18%;
+    --ring: 205.4 18.6% 72.5%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(var(--primary), 0.12) 0px, transparent 52%),
+      radial-gradient(at 100% 0%, hsla(var(--accent), 0.1) 0px, transparent 48%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+
+  /* Dark mode glass */
+  .dark .glass {
+    background: rgba(22, 37, 79, 0.56);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(172, 187, 198, 0.12);
+    box-shadow: 0 16px 40px 0 rgba(6, 8, 23, 0.28);
+  }
+
+  .dark .glass-card {
+    background: linear-gradient(180deg, rgba(22, 37, 79, 0.58), rgba(6, 8, 23, 0.82));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(172, 187, 198, 0.1);
+    box-shadow: 0 20px 44px 0 rgba(6, 8, 23, 0.3);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  /* Light mode glass */
+  .light .glass {
+    background: rgba(236, 236, 236, 0.76);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(102, 125, 157, 0.14);
+    box-shadow: 0 14px 36px 0 rgba(6, 8, 23, 0.08);
+  }
+
+  .light .glass-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(236, 236, 236, 0.94));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(102, 125, 157, 0.14);
+    box-shadow: 0 16px 36px 0 rgba(6, 8, 23, 0.08);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  /* Fallback (defaults to dark-style glass) */
+  .glass {
+    background: rgba(22, 37, 79, 0.56);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(172, 187, 198, 0.12);
+    box-shadow: 0 16px 40px 0 rgba(6, 8, 23, 0.28);
+  }
+
+  .glass-card {
+    background: linear-gradient(180deg, rgba(22, 37, 79, 0.58), rgba(6, 8, 23, 0.82));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(172, 187, 198, 0.1);
+    box-shadow: 0 20px 44px 0 rgba(6, 8, 23, 0.3);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 18px rgba(102, 125, 157, 0.22);
+    @apply border-primary/50;
+  }
+
+  .dark .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-[#ecf0f3] to-[#acbbc6];
+  }
+
+  .light .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-[#060817] via-[#16254f] to-[#667d9d];
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/45 rounded-full;
+  }
+
+  .light .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/25 rounded-full;
+  }
+}
+
+/* Light mode body override */
+.light body {
+  background-image:
+    radial-gradient(at 0% 0%, hsla(224.2, 56.4%, 19.8%, 0.08) 0px, transparent 52%),
+    radial-gradient(at 100% 0%, hsla(214.9, 21.9%, 50.8%, 0.08) 0px, transparent 48%);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
