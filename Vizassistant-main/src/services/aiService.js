@@ -1,109 +1,114 @@
-import OpenAI from "openai";
-import { fetchDataWithRetry } from '../utils/fetchWithRetry'
+// ─── aiService.js ─────────────────────────────────────────────────────────────
+const OR_KEY   = import.meta.env.VITE_OPENROUTER_API_KEY
+const OR_MODEL = 'google/gemini-2.0-flash-001'
+const OR_URL   = 'https://openrouter.ai/api/v1/chat/completions'
 
-const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile";
+// ── Shared fetch wrapper ──────────────────────────────────────────────────────
+const callOpenRouter = async (messages, maxTokens = 1500) => {
+    if (!OR_KEY) {
+        throw new Error('AI_UNAVAILABLE: VITE_OPENROUTER_API_KEY is not set in .env')
+    }
 
-const openai = GROQ_KEY ? new OpenAI({
-    apiKey: GROQ_KEY,
-    baseURL: "https://api.groq.com/openai/v1",
-    fetch: fetchDataWithRetry,
-    dangerouslyAllowBrowser: true // Required for client-side usage in Vite
-}) : null;
+    const res = await fetch(OR_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${OR_KEY}`,
+            'Content-Type':  'application/json',
+            'HTTP-Referer':  window.location.origin,
+            'X-Title':       'Vizassistant',
+        },
+        body: JSON.stringify({
+            model:       OR_MODEL,
+            messages,
+            max_tokens:  maxTokens,
+            temperature: 0.7,
+        }),
+    })
 
-/**
- * Generates insights from the provided dataset using OpenAI.
- * @param {Array} data - The dataset to analyze (JSON array).
- * @returns {Promise<string>} - The generated insights in markdown format.
- */
+    const data = await res.json()
+
+    if (!res.ok) {
+        if (res.status === 401) throw new Error('AUTH_ERROR: Invalid OpenRouter API key.')
+        if (res.status === 429) throw new Error('QUOTA_EXCEEDED: Rate limit hit. Try again in a moment.')
+        if (res.status === 402) throw new Error('QUOTA_EXCEEDED: OpenRouter credits exhausted.')
+        throw new Error(`ERROR: ${data?.error?.message || `HTTP ${res.status}`}`)
+    }
+
+    return data.choices?.[0]?.message?.content || ''
+}
+
+// ── 1. Generate Insights ──────────────────────────────────────────────────────
 export const generateInsights = async (data) => {
-    if (!openai) {
-        return "AI_UNAVAILABLE: Please set a valid VITE_GROQ_API_KEY in your settings to enable insights.";
-    }
+    if (!OR_KEY) return 'AI_UNAVAILABLE: Please set VITE_OPENROUTER_API_KEY in your .env file.'
+    if (!data || data.length === 0) return 'No data available to analyze.'
 
-    if (!data || data.length === 0) {
-        return "No data available to analyze.";
-    }
+    const preview = data.slice(0, 100)
+    const cols    = Object.keys(preview[0] || {})
 
-    const previewData = data.slice(0, 100);
-    const prompt = `
-    Context: You are a professional data analyst.
-    Task: Analyze the provided dataset and generate a concise summary with 3-5 key actionable insights.
-    Focus on:
-    - Significant trends or patterns
-    - Anomalies or outliers
-    - Potential opportunities or risks based on the numbers
-    
-    Data (JSON format):
-    ${JSON.stringify(previewData)}
-    
-    Format of Output: 
-    Return ONLY clean Markdown. Start with a brief overview paragraph, followed by a bulleted list of insights. Use bold text for emphasis.
-  `;
+    const prompt = `You are a professional data analyst. Analyze this dataset and generate a concise report.
+
+Dataset info:
+- Total rows: ${data.length}
+- Columns: ${cols.join(', ')}
+- Sample data (first 100 rows): ${JSON.stringify(preview)}
+
+Instructions:
+- Write a brief overview paragraph (2-3 sentences)
+- List 4-6 key actionable insights as bullet points
+- Highlight any anomalies, trends, or opportunities
+- Use **bold** for emphasis on important numbers or findings
+- Format output as clean Markdown only`
 
     try {
-        const completion = await openai.chat.completions.create({
-            model: GROQ_MODEL,
-            messages: [
-                { role: "system", content: "You are a professional data analyst." },
-                { role: "user", content: prompt }
-            ]
-        });
-
-        return completion.choices[0].message.content;
-    } catch (error) {
-        if (error.status === 429) {
-            return "QUOTA_EXCEEDED: Groq quota reached. Please check your usage or try again later.";
-        }
-        console.error("Error generating insights:", error);
-        return `ERROR: ${error.message || "Failed to generate AI insights."}`;
+        return await callOpenRouter([
+            { role: 'system', content: 'You are a professional data analyst. Return only clean Markdown.' },
+            { role: 'user',   content: prompt },
+        ], 1500)
+    } catch (err) {
+        console.error('generateInsights error:', err)
+        if (err.message.startsWith('QUOTA_EXCEEDED')) return `QUOTA_EXCEEDED: ${err.message}`
+        if (err.message.startsWith('AUTH_ERROR'))     return `AI_UNAVAILABLE: ${err.message}`
+        if (err.message.startsWith('AI_UNAVAILABLE')) return err.message
+        return `ERROR: ${err.message}`
     }
-};
+}
 
-/**
- * Answers a user query based on the provided dataset context using OpenAI.
- * @param {string} query - The user's question.
- * @param {Array} contextData - The dataset context.
- * @returns {Promise<string>} - The answer.
- */
+// ── 2. Ask AI ─────────────────────────────────────────────────────────────────
 export const askAI = async (query, contextData) => {
-    if (!openai) {
-        return "AI_UNAVAILABLE: Please set a valid VITE_GROQ_API_KEY in your settings to ask questions.";
-    }
+    if (!OR_KEY)      return 'AI_UNAVAILABLE: Please set VITE_OPENROUTER_API_KEY in your .env file.'
+    if (!query?.trim()) return 'Please ask a question.'
 
-    if (!query) return "Please ask a question.";
+    const preview = contextData
+        ? JSON.stringify(contextData.slice(0, 80))
+        : 'No data loaded.'
 
-    const contextPreview = contextData ? JSON.stringify(contextData.slice(0, 50)) : "No specific data loaded.";
+    const cols = contextData?.[0] ? Object.keys(contextData[0]).join(', ') : 'unknown'
 
-    const prompt = `
-        You are a helpful data analyst assistant for the "Vizasistance" platform.
-        Context Data (preview of first 50 rows): ${contextPreview}
-        
-        User Question: ${query}
-        
-        Guidelines:
-        - If the question can be answered from the data, provide a clear and accurate calculation or description.
-        - If the question is about trends, describe them based on the provided JSON.
-        - If you cannot answer based on the data, politely say so.
-        - Keep the answer concise (maximum 3-4 sentences).
-        - Use Markdown for numbers or lists if appropriate.
-    `;
+    const prompt = `You are a helpful data analyst for the Vizassistant platform.
+
+Dataset context:
+- Columns: ${cols}
+- Total rows: ${contextData?.length || 0}
+- Sample data (first 80 rows): ${preview}
+
+User question: ${query}
+
+Guidelines:
+- Answer directly and accurately from the data
+- Keep response concise (3-5 sentences max)
+- Use Markdown for numbers, lists, or comparisons
+- If the question cannot be answered from the data, say so politely`
 
     try {
-        const completion = await openai.chat.completions.create({
-            model: GROQ_MODEL,
-            messages: [
-                { role: "system", content: "You are a helpful data analyst assistant." },
-                { role: "user", content: prompt }
-            ]
-        });
-
-        return completion.choices[0].message.content;
-    } catch (error) {
-        if (error.status === 429) {
-            return "QUOTA_EXCEEDED: Groq quota reached. Please check your usage.";
-        }
-        console.error("Error asking AI:", error);
-        return `ERROR: ${error.message || "I encountered an error trying to process your request."}`;
+        return await callOpenRouter([
+            { role: 'system', content: 'You are a helpful data analyst assistant. Be concise and accurate.' },
+            { role: 'user',   content: prompt },
+        ], 800)
+    } catch (err) {
+        console.error('askAI error:', err)
+        if (err.message.startsWith('QUOTA_EXCEEDED')) return `QUOTA_EXCEEDED: ${err.message}`
+        if (err.message.startsWith('AUTH_ERROR'))     return 'AUTH_ERROR: Invalid API key.'
+        if (err.message.startsWith('AI_UNAVAILABLE')) return err.message
+        return `ERROR: ${err.message}`
     }
 }
