@@ -3,6 +3,7 @@ import { Lightbulb, TrendingUp, AlertTriangle, Sparkles, Loader2 } from 'lucide-
 import ReactMarkdown from 'react-markdown'
 import { generateInsights } from '../../services/aiService'
 
+
 const Insights = ({ data }) => {
     const [aiInsights, setAiInsights] = useState('')
     const [loading, setLoading] = useState(false)

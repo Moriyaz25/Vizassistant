@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { TrendingUp, Zap, Loader2, AlertTriangle, Sparkles, Database, MessageSquare, Send, ArrowLeft, Download, FileText, Image, FileDown, ChevronDown } from 'lucide-react'
+import { TrendingUp, Loader2, AlertTriangle, Sparkles, Database, MessageSquare, Send, ArrowLeft, Download, FileText, Image, FileDown, ChevronDown, Presentation } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateInsights, askAI } from '../services/aiService'
 import { db } from '../services/firebase'
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import ChartGenerator from '../components/charts/ChartGenerator'
-import { downloadChartAsPNG, exportFullReportAsPDF, exportDataAsCSV, exportInsightsAsTxt } from '../utils/downloadUtils'
+import { downloadChartAsPNG, exportFullReportAsPDF, exportDataAsCSV, exportInsightsAsTxt, exportAsPowerPoint } from '../utils/downloadUtils'
 
 const InsightsPage = () => {
     const [searchParams] = useSearchParams()
@@ -20,6 +20,7 @@ const InsightsPage = () => {
 
     // Download state
     const [downloading, setDownloading] = useState(false)
+    const [downloadingType, setDownloadingType] = useState(null)
     const [showDownloadMenu, setShowDownloadMenu] = useState(false)
     const downloadMenuRef = useRef(null)
 
@@ -55,7 +56,6 @@ const InsightsPage = () => {
                 const data = { id: docSnap.id, ...docSnap.data() }
                 setDataset(data)
 
-                // Check if insights already exist for this dataset
                 const q = query(collection(db, 'insights'), where('dataset_id', '==', id))
                 const querySnapshot = await getDocs(q)
 
@@ -79,14 +79,17 @@ const InsightsPage = () => {
     const handleDownload = async (type) => {
         setShowDownloadMenu(false)
         setDownloading(true)
+        setDownloadingType(type)
         try {
             const name = dataset?.file_name?.replace(/\.[^.]+$/, '') || 'analysis'
             if (type === 'png') await downloadChartAsPNG('chart-capture', `${name}_chart.png`)
             else if (type === 'pdf') await exportFullReportAsPDF('chart-capture', insights, name)
             else if (type === 'csv') exportDataAsCSV(dataset?.raw_data || [], `${name}.csv`)
             else if (type === 'txt') exportInsightsAsTxt(insights, `${name}_insights.txt`)
+            else if (type === 'ppt') await exportAsPowerPoint('chart-capture', insights, name)
         } finally {
             setDownloading(false)
+            setDownloadingType(null)
         }
     }
 
@@ -149,6 +152,49 @@ const InsightsPage = () => {
         }
     }
 
+    const EXPORT_ITEMS = [
+        {
+            type: 'ppt',
+            icon: Presentation,
+            label: 'PowerPoint',
+            sub: 'Slides ready to present',
+            color: 'text-orange-400',
+            disabled: !insights,
+        },
+        {
+            type: 'pdf',
+            icon: FileText,
+            label: 'Full Report',
+            sub: 'Chart + AI insights (PDF)',
+            color: 'text-red-400',
+            disabled: false,
+        },
+        {
+            type: 'png',
+            icon: Image,
+            label: 'Chart Image',
+            sub: 'High-res PNG',
+            color: 'text-primary',
+            disabled: false,
+        },
+        {
+            type: 'csv',
+            icon: FileDown,
+            label: 'Raw Data',
+            sub: 'Spreadsheet (CSV)',
+            color: 'text-green-400',
+            disabled: false,
+        },
+        {
+            type: 'txt',
+            icon: FileText,
+            label: 'AI Insights',
+            sub: 'Plain text report',
+            color: 'text-[#667D9D]',
+            disabled: !insights,
+        },
+    ]
+
     if (!datasetId) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
@@ -157,7 +203,9 @@ const InsightsPage = () => {
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold">No Dataset Selected</h2>
-                    <p className="text-zinc-500 max-w-sm mx-auto mt-2">Please upload a dataset or select one from your history to see AI insights.</p>
+                    <p className="text-zinc-500 max-w-sm mx-auto mt-2">
+                        Please upload a dataset or select one from your history to see AI insights.
+                    </p>
                 </div>
                 <Link to="/dashboard/upload" className="bg-primary text-white px-8 py-3 rounded-2xl font-bold">
                     Go to Upload
@@ -179,7 +227,7 @@ const InsightsPage = () => {
                     </div>
                 </div>
 
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-widest">
                         <Sparkles className="h-3 w-3" />
                         Groq AI Active
@@ -192,10 +240,18 @@ const InsightsPage = () => {
                             disabled={downloading || !dataset}
                             className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none"
                         >
-                            {downloading
-                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Exporting...</>
-                                : <><Download className="h-4 w-4" /> Export <ChevronDown className="h-3 w-3" /></>
-                            }
+                            {downloading ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    {downloadingType === 'ppt' ? 'Building Slides...' : 'Exporting...'}
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="h-4 w-4" />
+                                    Export
+                                    <ChevronDown className="h-3 w-3" />
+                                </>
+                            )}
                         </button>
 
                         <AnimatePresence>
@@ -205,29 +261,47 @@ const InsightsPage = () => {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                                     transition={{ duration: 0.15 }}
-                                    className="absolute right-0 top-full mt-2 w-52 bg-card border border-border rounded-2xl shadow-2xl shadow-black/30 overflow-hidden z-50"
+                                    className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl shadow-black/30 overflow-hidden z-50"
                                 >
-                                    {[ 
-                                        { type: 'pdf', icon: FileText, label: 'Full Report', sub: 'Chart + AI insights (PDF)', color: 'text-red-400' },
-                                        { type: 'png', icon: Image, label: 'Chart Image', sub: 'High-res PNG', color: 'text-primary' },
-                                        { type: 'csv', icon: FileDown, label: 'Raw Data', sub: 'Spreadsheet (CSV)', color: 'text-green-400' },
-                                        { type: 'txt', icon: FileText, label: 'AI Insights', sub: 'Plain text report', color: 'text-[#667D9D]' },
-                                    ].map(item => (
+                                    {/* PPT — highlighted at top */}
+                                    <div className="p-2 border-b border-border">
                                         <button
-                                            key={item.type}
-                                            onClick={() => handleDownload(item.type)}
-                                            disabled={item.type === 'txt' && !insights}
-                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-left group disabled:opacity-40"
+                                            onClick={() => handleDownload('ppt')}
+                                            disabled={!insights}
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 transition-colors text-left group disabled:opacity-40"
                                         >
-                                            <div className={`p-1.5 rounded-lg bg-muted group-hover:scale-110 transition-transform`}>
-                                                <item.icon className={`h-4 w-4 ${item.color}`} />
+                                            <div className="p-1.5 rounded-lg bg-orange-500/15 group-hover:scale-110 transition-transform">
+                                                <Presentation className="h-4 w-4 text-orange-400" />
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-foreground">{item.label}</p>
-                                                <p className="text-[10px] text-zinc-500">{item.sub}</p>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-bold text-foreground">PowerPoint</p>
+                                                <p className="text-[10px] text-zinc-500">Slides ready to present</p>
                                             </div>
+                                            <span className="text-[9px] font-black uppercase tracking-wider text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded-full">
+                                                NEW
+                                            </span>
                                         </button>
-                                    ))}
+                                    </div>
+
+                                    {/* Other export options */}
+                                    <div className="p-2 space-y-0.5">
+                                        {EXPORT_ITEMS.filter(i => i.type !== 'ppt').map(item => (
+                                            <button
+                                                key={item.type}
+                                                onClick={() => handleDownload(item.type)}
+                                                disabled={item.disabled}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/60 transition-colors text-left group disabled:opacity-40"
+                                            >
+                                                <div className="p-1.5 rounded-lg bg-muted group-hover:scale-110 transition-transform">
+                                                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-foreground">{item.label}</p>
+                                                    <p className="text-[10px] text-zinc-500">{item.sub}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -279,11 +353,27 @@ const InsightsPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-card border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-primary/5"
                         >
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="bg-primary/10 p-2 rounded-xl">
-                                    <TrendingUp className="h-6 w-6 text-primary" />
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-xl">
+                                        <TrendingUp className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <h2 className="text-2xl font-black">Strategic Report</h2>
                                 </div>
-                                <h2 className="text-2xl font-black">Strategic Report</h2>
+
+                                {/* Quick PPT button inside insights card */}
+                                <button
+                                    onClick={() => handleDownload('ppt')}
+                                    disabled={downloading}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+                                >
+                                    {downloading && downloadingType === 'ppt' ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <Presentation className="h-3.5 w-3.5" />
+                                    )}
+                                    Export PPT
+                                </button>
                             </div>
 
                             <div className="prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-black">
